@@ -14,12 +14,18 @@ class ResourceRequestHandler:
     async def request_resource(self, request: aiohttp.ClientRequest):
         kwargs = {}
 
+        if request.method == 'OPTIONS':
+            headers = {
+                "Allow": "GET, PUT, POST, DELETE"
+            }
+            return aiohttp.web.Response(headers=headers)
+
         if request.method == 'GET':
             func = self.resource.list
         elif request.method == 'PUT':
             func = self.resource.replace_all
             kwargs = {'items': await request.json()}
-        elif request.method == 'PATCH':
+        elif request.method == 'POST':
             func = self.resource.create,
             kwargs = {'items': await request.json()}
         elif request.method == 'DELETE':
@@ -33,6 +39,12 @@ class ResourceRequestHandler:
         return await self.make_request(request, func, **kwargs)
 
     async def request_resource_item(self, request: aiohttp.ClientRequest):
+        if request.method == 'OPTIONS':
+            headers = {
+                "Allow": "GET, PUT, PATCH, DELETE"
+            }
+            return aiohttp.web.Response(headers=headers)
+
         if 'id' not in request.match_info:
             return json_response({
                 'status': 'error',
