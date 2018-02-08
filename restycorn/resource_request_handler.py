@@ -14,13 +14,7 @@ class ResourceRequestHandler:
     async def request_resource(self, request: aiohttp.ClientRequest):
         kwargs = {}
 
-        if request.method == 'OPTIONS':
-            headers = {
-                "Allow": "GET, PUT, POST, DELETE"
-            }
-            return aiohttp.web.Response(headers=headers)
-
-        if request.method == 'GET':
+        if request.method == 'GET' or request.method == 'OPTIONS':
             func = self.resource.list
         elif request.method == 'PUT':
             func = self.resource.replace_all
@@ -36,15 +30,20 @@ class ResourceRequestHandler:
                 'error_message': 'Method "{}" is not allowed here'.format(request.method)
             })
 
-        return await self.make_request(request, func, **kwargs)
+        response = await self.make_request(request, func, **kwargs)
 
-    async def request_resource_item(self, request: aiohttp.ClientRequest):
         if request.method == 'OPTIONS':
             headers = {
-                "Allow": "GET, PUT, PATCH, DELETE"
+                "Allow": "GET, PUT, POST, DELETE"
             }
-            return aiohttp.web.Response(headers=headers)
+        else:
+            headers = {}
 
+        response.headers.update(headers)
+
+        return response
+
+    async def request_resource_item(self, request: aiohttp.ClientRequest):
         if 'id' not in request.match_info:
             return json_response({
                 'status': 'error',
@@ -55,7 +54,7 @@ class ResourceRequestHandler:
 
         kwargs = {}
 
-        if request.method == 'GET':
+        if request.method == 'GET' or request.method == 'OPTIONS':
             func = self.resource.get
             kwargs = {'item_id': item_id}
         elif request.method == 'PUT':
@@ -73,7 +72,18 @@ class ResourceRequestHandler:
                 'error_message': 'Method "{}" is not allowed here'.format(request.method)
             })
 
-        return await self.make_request(request, func, **kwargs)
+        response = await self.make_request(request, func, **kwargs)
+
+        if request.method == 'OPTIONS':
+            headers = {
+                "Allow": "GET, PUT, POST, DELETE"
+            }
+        else:
+            headers = {}
+
+        response.headers.update(headers)
+
+        return response
 
     @staticmethod
     async def make_request(request, func, **kwargs):
@@ -82,6 +92,7 @@ class ResourceRequestHandler:
             kwargs = ResourceRequestHandler._prepare_params(func, kwargs)
 
             result = await func(**kwargs)
+
             return json_response({
                 'status': 'ok',
                 'data': result,
