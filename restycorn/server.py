@@ -23,6 +23,7 @@ class Server:
         resource_url = self.base_address + '/' + resource_name
 
         self.app.router.add_route('*', resource_url, handler.request_resource)
+        self.app.router.add_route('*', resource_url + '/', handler.request_resource)
         self.app.router.add_route('*', resource_url + '/{id}', handler.request_resource_item)
 
     def set_base_address(self, base_address: str):
