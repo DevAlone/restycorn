@@ -1,2 +1,4 @@
 aiohttp
 asyncpg
+sqlalchemy
+asyncpgsa

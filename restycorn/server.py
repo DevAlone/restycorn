@@ -15,8 +15,8 @@ class Server:
         self.base_address = '/'
         self.app = web.Application()
 
-    def run(self):
-        web.run_app(self.app, host=self.host, port=self.port)
+    def run(self, loop=None):
+        web.run_app(self.app, host=self.host, port=self.port, loop=loop)
 
     def register_resource(self, resource_name, resource: BaseResource):
         handler = ResourceRequestHandler(resource)
