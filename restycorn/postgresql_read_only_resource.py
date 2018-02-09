@@ -6,7 +6,7 @@ from .restycorn_types import uint
 
 
 class PostgreSQLReadOnlyResource(BaseResource):
-    def __init__(self, db, table_name, fields, order_by, search_by):
+    def __init__(self, db, table_name, fields, order_by, search_by, page_size=10):
         self.db = db
         self.pool = None
         self.table_name = table_name
@@ -14,7 +14,7 @@ class PostgreSQLReadOnlyResource(BaseResource):
         self.order_by_fields = order_by
         self.search_by_fields = search_by
         self.serializer = PostgreSQLSerializer(self.fields)
-        self.page_size = 10
+        self.page_size = page_size
 
     async def init_pool(self):
         if self.pool is None:

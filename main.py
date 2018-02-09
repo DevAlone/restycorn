@@ -68,6 +68,7 @@ def main():
         table_name='core_user',
         order_by=('id', 'rating', 'username'),
         search_by=('username',),
+        page_size=50,
     ))
 
     server.register_resource('communities', PostgreSQLReadOnlyResource(
@@ -76,6 +77,7 @@ def main():
         table_name='core_user',
         order_by=('id', 'rating', 'username'),
         search_by=('username',),
+        page_size=50,
     ))
     server.run()
 
