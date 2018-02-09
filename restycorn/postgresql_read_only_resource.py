@@ -89,8 +89,14 @@ class PostgreSQLReadOnlyResource(BaseResource):
         return [self.serializer.serialize(item) for item in items]
 
     async def get(self, item_id: str) -> object:
-        sql_request = self.table.select(self.fields).where(
-            self.id_field == item_id
+        field = getattr(self.table.c, self.id_field)
+        try:
+            item_id = field.type.python_type(item_id)
+        except ValueError:
+            raise ParamsValidationException("Bad value for filter by field \"{}\"".format(field))
+
+        sql_request = self.table.select().where(
+            field == item_id
         )
 
         print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')

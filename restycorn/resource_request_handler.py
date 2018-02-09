@@ -30,18 +30,7 @@ class ResourceRequestHandler:
                 'error_message': 'Method "{}" is not allowed here'.format(request.method)
             })
 
-        response = await self.make_request(request, func, **kwargs)
-
-        if request.method == 'OPTIONS':
-            headers = {
-                "Allow": "GET, PUT, POST, DELETE"
-            }
-        else:
-            headers = {}
-
-        response.headers.update(headers)
-
-        return response
+        return await self.pre_request(request, func, **kwargs)
 
     async def request_resource_item(self, request: aiohttp.ClientRequest):
         if 'id' not in request.match_info:
@@ -72,6 +61,9 @@ class ResourceRequestHandler:
                 'error_message': 'Method "{}" is not allowed here'.format(request.method)
             })
 
+        return await self.pre_request(request, func, **kwargs)
+
+    async def pre_request(self, request, func, **kwargs):
         response = await self.make_request(request, func, **kwargs)
 
         if request.method == 'OPTIONS':
@@ -101,12 +93,12 @@ class ResourceRequestHandler:
             return json_response({
                 'status': 'error',
                 'error_message': 'item does not exist',
-            })
+            }, status=404)
         except ParamsValidationException as ex:
             return json_response({
                 'status': 'error',
                 'error_message': str(ex),
-            })
+            }, status=400)
         except BaseException as ex:
             print(type(ex))
             print(ex)
@@ -117,7 +109,7 @@ class ResourceRequestHandler:
                 'error_message': 'Error during processing resource "{}" with request method "{}"'.format(
                     request.url, request.method
                 )
-            })
+            }, status=500)
 
     @staticmethod
     def _prepare_params(func, params: dict) -> dict:

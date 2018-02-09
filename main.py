@@ -179,7 +179,7 @@ async def main():
         page_size=50,
     ))
 
-    server.register_resource('user_rating_graph', PostgreSQLReadOnlyResource(
+    server.register_resource('graph/user/rating', PostgreSQLReadOnlyResource(
         sqlalchemy_table=Table(
             'core_userratingentry', metadata,
             sqlalchemy.Column('id', sqlalchemy.BigInteger, primary_key=True),
