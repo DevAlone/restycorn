@@ -196,6 +196,30 @@ async def main():
         paginated=False,
     ))
 
+    communities_app_communitycountersentry = Table(
+        'communities_app_communitycountersentry', metadata,
+        sqlalchemy.Column('id', sqlalchemy.BigInteger, primary_key=True),
+        sqlalchemy.Column('timestamp', sqlalchemy.BigInteger),
+        sqlalchemy.Column('community_id', sqlalchemy.BigInteger),
+        sqlalchemy.Column('subscribers_count', sqlalchemy.Integer),
+        sqlalchemy.Column('stories_count', sqlalchemy.Integer),
+    )
+
+    def register_community_graph_item_resource(resource_name):
+        server.register_resource('graph/community/' + resource_name, PostgreSQLReadOnlyResource(
+            sqlalchemy_table=communities_app_communitycountersentry,
+            fields=('timestamp', '{} as value'.format(resource_name)),
+            id_field='community_id',
+            order_by=('id',),
+            filter_by={
+                'community_id': ('=',),
+            },
+            paginated=False,
+        ))
+
+    register_community_graph_item_resource('subscribers_count')
+    register_community_graph_item_resource('stories_count')
+
     return server
 
 
