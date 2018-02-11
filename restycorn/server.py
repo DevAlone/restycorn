@@ -6,7 +6,7 @@ from .resource_request_handler import ResourceRequestHandler
 
 
 class Server:
-    def __init__(self, host: str="localhost", port: int=4444):
+    def __init__(self, host: str="localhost", port: int=4444, access_log_format=None):
         if port < 0 or port > 65535:
             raise ValueError("Port should be in range 0 - 65535")
 
@@ -14,9 +14,10 @@ class Server:
         self.port = port
         self.base_address = '/'
         self.app = web.Application()
+        self.access_log_format = access_log_format
 
     def run(self, loop=None):
-        web.run_app(self.app, host=self.host, port=self.port, loop=loop)
+        web.run_app(self.app, host=self.host, port=self.port, loop=loop, access_log_format=self.access_log_format)
 
     def register_resource(self, resource_name, resource: BaseResource):
         handler = ResourceRequestHandler(resource)
