@@ -1,11 +1,14 @@
-import asyncpgsa
-import re
-import sqlalchemy
-
+from .postgresql import db
 from .base_resource import BaseResource
 from .exceptions import MethodIsNotAllowedException, ParamsValidationException, ResourceItemDoesNotExistException
 from .postgresql_serializer import PostgreSQLSerializer
 from .restycorn_types import uint
+
+import asyncpgsa
+import asyncpg
+import re
+import sqlalchemy
+import time
 
 
 class PostgreSQLReadOnlyResource(BaseResource):
@@ -30,6 +33,17 @@ class PostgreSQLReadOnlyResource(BaseResource):
 
         if (order_by[1:] if order_by.startswith('-') else order_by) not in self.order_by_fields:
             raise ParamsValidationException("It's not allowed to sort by this field")
+
+        if order_by.startswith('-'):
+            order_field_name = order_by[1:]
+            descend_ordering = True
+        else:
+            order_field_name = order_by
+            descend_ordering = False
+
+        order_by = getattr(self.table.c, order_field_name)
+        if descend_ordering:
+            order_by = sqlalchemy.desc(order_by)
 
         # sql_request = self.table.select()
         sql_request = sqlalchemy.select(['*'])
@@ -89,12 +103,17 @@ class PostgreSQLReadOnlyResource(BaseResource):
             if page:
                 sql_request = sql_request.offset(self.page_size)
 
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-        print('request: "{}"'.format(sql_request))
-        print('params: "{}"'.format(sql_request.compile().params))
-        print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-
+        _debug_start_time = time.time()
         items = await asyncpgsa.pg.fetch(sql_request)
+        _debug_end_start_time = time.time()
+
+        time_to_process_request = _debug_end_start_time - _debug_start_time
+
+        if time_to_process_request > 0.5:
+            sql_request_str = str(sql_request).replace('\n', ' ')
+            sql_params = sql_request.compile().params
+            print("SLOW REQUEST: {}; with params: {};".format(sql_request_str, sql_params))
+            print("Time to process request: {}".format(time_to_process_request))
 
         return [self.serializer.serialize(item) for item in items]
 
