@@ -10,7 +10,7 @@ from .restycorn_types import uint
 
 class PostgreSQLReadOnlyResource(BaseResource):
     def __init__(self, sqlalchemy_table, fields, id_field, order_by, filter_by=None, search_by=None, paginated=True,
-                 page_size=10):
+                 page_size=10, join=None):
         self.table = sqlalchemy_table
         self.fields = fields
         self.order_by_fields = order_by
@@ -20,6 +20,7 @@ class PostgreSQLReadOnlyResource(BaseResource):
         self.serializer = PostgreSQLSerializer(self.fields)
         self.paginated = paginated
         self.page_size = page_size
+        self.join = join
 
     async def list(self, page: uint=0, order_by: str=None, search_text: str=None, filter: str=None) -> list:
         if order_by is None:
@@ -30,9 +31,18 @@ class PostgreSQLReadOnlyResource(BaseResource):
         if (order_by[1:] if order_by.startswith('-') else order_by) not in self.order_by_fields:
             raise ParamsValidationException("It's not allowed to sort by this field")
 
-        sql_request = self.table.select()
+        # sql_request = self.table.select()
+        sql_request = sqlalchemy.select(['*'])
+
+        select_table = self.table
+
+        if self.join is not None:
+            select_table = select_table.join(self.join[0], self.join[1])
+
+        sql_request = sql_request.select_from(select_table)
 
         if search_text:
+            search_text = search_text.strip()
             search_text = \
                 '%' + search_text.replace('!', '!!').replace("%", "!%").replace("_", "!_").replace("[", "![") + '%'
 

@@ -9,7 +9,6 @@ class PostgreSQLSerializer(BaseSerializer):
                 field if ' as ' not in field else field.split(' as ', maxsplit=2)[1]
             for field in fields
         }
-        print(self.fields)
 
     def serialize(self, item) -> dict:
         result = {}
