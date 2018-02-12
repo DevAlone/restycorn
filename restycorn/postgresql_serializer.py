@@ -17,6 +17,9 @@ class PostgreSQLSerializer(BaseSerializer):
                 result[self.fields[key]] = val
 
         if len(result) != len(self.fields):
-            raise SerializationError()
+            raise SerializationError("""
+                item = {};
+                result = {};
+            """.format(item, result))
 
         return result

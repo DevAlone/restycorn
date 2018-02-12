@@ -1,3 +1,4 @@
+from pikabot_graphs import settings
 from .postgresql import db
 from .base_resource import BaseResource
 from .exceptions import MethodIsNotAllowedException, ParamsValidationException, ResourceItemDoesNotExistException
@@ -25,7 +26,7 @@ class PostgreSQLReadOnlyResource(BaseResource):
         self.page_size = page_size
         self.join = join
 
-    async def list(self, page: uint=0, order_by: str=None, search_text: str=None, filter: str=None) -> list:
+    async def list(self, page: uint=0, order_by: str=None, search_text: str=None, filter: str=None, count: bool=False):
         if order_by is None:
             order_by = self.order_by_fields[0]
 
@@ -46,7 +47,10 @@ class PostgreSQLReadOnlyResource(BaseResource):
             order_by = sqlalchemy.desc(order_by)
 
         # sql_request = self.table.select()
-        sql_request = sqlalchemy.select(['*'])
+        if count:
+            sql_request = sqlalchemy.select([sqlalchemy.func.count()])
+        else:
+            sql_request = sqlalchemy.select(['*'])
 
         select_table = self.table
 
@@ -96,12 +100,18 @@ class PostgreSQLReadOnlyResource(BaseResource):
                 else:
                     raise ParamsValidationException("It's not allowed to filter using this operator")
 
-        sql_request = sql_request.order_by(order_by)
+        if not count:
+            sql_request = sql_request.order_by(order_by)
 
         if self.paginated:
             sql_request = sql_request.limit(self.page_size)
             if page:
-                sql_request = sql_request.offset(self.page_size)
+                sql_request = sql_request.offset(page * self.page_size)
+
+        if settings.DEBUG:
+            sql_request_str = str(sql_request).replace('\n', ' ')
+            sql_params = sql_request.compile().params
+            print("request: \"{}\"\nparams: \"{}\";".format(sql_request_str, sql_params))
 
         _debug_start_time = time.time()
         items = await asyncpgsa.pg.fetch(sql_request)
@@ -114,6 +124,11 @@ class PostgreSQLReadOnlyResource(BaseResource):
             sql_params = sql_request.compile().params
             print("SLOW REQUEST: {}; with params: {};".format(sql_request_str, sql_params))
             print("Time to process request: {}".format(time_to_process_request))
+
+        if count:
+            return [], {
+                'count': items[0][0],
+            }
 
         return [self.serializer.serialize(item) for item in items]
 

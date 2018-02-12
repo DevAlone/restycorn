@@ -85,10 +85,17 @@ class ResourceRequestHandler:
 
             result = await func(**kwargs)
 
-            return json_response({
+            response = {
                 'status': 'ok',
-                'data': result,
-            })
+            }
+
+            if type(result) is tuple:
+                response['data'] = result[0]
+                response.update(result[1])
+            else:
+                response['data'] = result
+
+            return json_response(response)
         except ResourceItemDoesNotExistException:
             return json_response({
                 'status': 'error',
