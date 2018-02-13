@@ -2,6 +2,10 @@ import abc
 
 
 class BaseResource:
+    time_cached = False
+    time_cache_seconds = 10
+    time_cache_size = 16
+
     @abc.abstractmethod
     async def list(self) -> list:
         """

@@ -21,20 +21,22 @@ class uint(int):
         return uint(super(uint, self).__truediv__(other))
 
     def __lt__(self, other):
-        return self < other
+        return super(uint, self).__lt__(other)
 
     def __le__(self, other):
-        return self <= other
+        return super(uint, self).__le__(other)
 
     def __eq__(self, other):
-        return self == other
+        return super(uint, self).__eq__(other)
 
     def __ne__(self, other):
-        return self != other
+        return super(uint, self).__ne__(other)
 
     def __gt__(self, other):
-        return self > other
+        return super(uint, self).__gt__(other)
 
     def __ge__(self, other):
-        return self >= other
+        return super(uint, self).__ge__(other)
 
+    def __hash__(self):
+        return super(uint, self).__hash__()

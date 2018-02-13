@@ -2,6 +2,7 @@ import inspect
 import traceback
 
 import aiohttp
+import time
 from aiohttp.web import json_response
 from .base_resource import BaseResource
 from .exceptions import ResourceItemDoesNotExistException, ParamsValidationException, MethodIsNotAllowedException
@@ -63,8 +64,36 @@ class ResourceRequestHandler:
 
         return await self.pre_request(request, func, **kwargs)
 
+    _request_cache = {}
     async def pre_request(self, request, func, **kwargs):
-        response = await self.make_request(request, func, **kwargs)
+        if self.resource.time_cached:
+            cache_key = (
+                request.method,
+                str(request.url),
+                func,
+                frozenset(kwargs.items()),
+            )
+
+            if cache_key not in self._request_cache:
+                self._request_cache[cache_key] = [
+                    (await self.make_request(request, func, **kwargs)),
+                    time.time() + self.resource.time_cache_seconds,
+                ]
+
+                if len(self._request_cache) > self.resource.time_cache_size:
+                    self._request_cache.clear()
+
+            response, expiration_time = self._request_cache[cache_key]
+
+            if expiration_time < time.time():
+                self._request_cache[cache_key] = (
+                    (await self.make_request(request, func, **kwargs)),
+                    time.time() + self.resource.time_cache_seconds
+                )
+        else:
+            response = await self.make_request(request, func, **kwargs)
+
+        response = json_response(response[0], status=response[1])
 
         if request.method == 'OPTIONS':
             headers = {
@@ -78,7 +107,7 @@ class ResourceRequestHandler:
         return response
 
     @staticmethod
-    async def make_request(request, func, **kwargs):
+    async def make_request(request, func, **kwargs) -> tuple:
         try:
             kwargs.update(dict(request.query))
             kwargs = ResourceRequestHandler._prepare_params(func, kwargs)
@@ -95,33 +124,33 @@ class ResourceRequestHandler:
             else:
                 response['data'] = result
 
-            return json_response(response)
+            return response, 200
         except ResourceItemDoesNotExistException:
-            return json_response({
+            return {
                 'status': 'error',
                 'error_message': 'item does not exist',
-            }, status=404)
+            }, 404
         except MethodIsNotAllowedException:
-            return json_response({
+            return {
                 'status': 'error',
                 'error_message': 'This method is not allowed for this resource',
-            }, status=404)
+            }, 404
         except ParamsValidationException as ex:
-            return json_response({
+            return {
                 'status': 'error',
                 'error_message': str(ex),
-            }, status=400)
+            }, 400
         except BaseException as ex:
             print(type(ex))
             print(ex)
             traceback.print_exc()
 
-            return json_response({
+            return {
                 'status': 'error',
                 'error_message': 'Error during processing resource "{}" with request method "{}"'.format(
                     request.url, request.method
                 )
-            }, status=500)
+            }, 500
 
     @staticmethod
     def _prepare_params(func, params: dict) -> dict:
