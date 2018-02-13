@@ -4,7 +4,7 @@ import traceback
 import aiohttp
 from aiohttp.web import json_response
 from .base_resource import BaseResource
-from .exceptions import ResourceItemDoesNotExistException, ParamsValidationException
+from .exceptions import ResourceItemDoesNotExistException, ParamsValidationException, MethodIsNotAllowedException
 
 
 class ResourceRequestHandler:
@@ -100,6 +100,11 @@ class ResourceRequestHandler:
             return json_response({
                 'status': 'error',
                 'error_message': 'item does not exist',
+            }, status=404)
+        except MethodIsNotAllowedException:
+            return json_response({
+                'status': 'error',
+                'error_message': 'This method is not allowed for this resource',
             }, status=404)
         except ParamsValidationException as ex:
             return json_response({
