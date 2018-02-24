@@ -16,8 +16,8 @@ class Server:
         self.app = web.Application()
         self.access_log_format = access_log_format
 
-    def run(self, loop=None):
-        web.run_app(self.app, host=self.host, port=self.port, loop=loop, access_log_format=self.access_log_format)
+    def run(self):
+        web.run_app(self.app, host=self.host, port=self.port, access_log_format=self.access_log_format)
 
     def register_resource(self, resource_name, resource: BaseResource):
         handler = ResourceRequestHandler(resource)
